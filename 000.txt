@@ -1,0 +1,2785 @@
+----------------[bil1]----------------
+
+IF DB_ID(N'College') IS NULL
+BEGIN
+    CREATE DATABASE College
+    ON
+    ( NAME = College_Data,
+      SIZE = 5MB,
+      FILEGROWTH = 1MB )
+    LOG ON
+    ( NAME = College_Log,
+      SIZE = 2MB );
+END;
+GO
+
+USE College;
+GO
+
+CREATE TABLE Zachet
+(
+    StudNo INT PRIMARY KEY,
+    FIO NVARCHAR(100) NULL,
+    PM01 INT NULL,
+    PM02 INT NULL
+);
+GO
+
+CREATE PROCEDURE Stud
+    @StudNo INT,
+    @FIO NVARCHAR(100),
+    @PM01 INT,
+    @PM02 INT
+AS
+BEGIN
+    INSERT INTO Zachet VALUES (@StudNo, @FIO, @PM01, @PM02);
+END;
+GO
+
+EXEC Stud 1, N'Иванов Иван', 5, 5;
+EXEC Stud 2, N'Петров Петр', 4, 5;
+EXEC Stud 3, N'Сидоров Алексей', 5, 5;
+EXEC Stud 4, N'Кузнецов Максим', 3, 4;
+EXEC Stud 5, N'Орлов Денис', 5, 5;
+GO
+
+SELECT * FROM Zachet;
+GO
+
+CREATE VIEW View1
+AS
+SELECT * FROM Zachet
+WHERE PM01 = 5 AND PM02 = 5;
+GO
+
+CREATE ROLE Teacher;
+GO
+
+CREATE LOGIN Prepod1 WITH PASSWORD = 'Pr123';
+CREATE LOGIN Prepod2 WITH PASSWORD = 'Pr456';
+GO
+
+CREATE USER Prepod1 FOR LOGIN Prepod1;
+CREATE USER Prepod2 FOR LOGIN Prepod2;
+GO
+
+EXEC sp_addrolemember 'Teacher', 'Prepod1';
+GO
+
+GRANT SELECT, UPDATE ON Zachet TO Teacher;
+GRANT SELECT ON View1 TO Prepod2;
+GRANT EXECUTE ON Stud TO Prepod2;
+GO
+
+EXEC sp_helprotect @username = 'Prepod1';
+EXEC sp_helprotect @username = 'Prepod2';
+GO
+
+BACKUP DATABASE College TO [Ust402-1];
+GO
+
+SELECT name, state_desc FROM sys.databases WHERE name = 'College';
+GO
+----------------[bil2]----------------
+IF DB_ID(N'City') IS NULL
+BEGIN
+    CREATE DATABASE City
+    ON
+    ( NAME = City_Data,
+      SIZE = 5MB,
+      FILEGROWTH = 1MB,
+      MAXSIZE = 15MB )
+    LOG ON
+    ( NAME = City_Log,
+      SIZE = 2MB,
+      FILEGROWTH = 1MB,
+      MAXSIZE = 10MB );
+END;
+GO
+
+USE City;
+GO
+
+CREATE TABLE Adres
+(
+    member_no SMALLINT NOT NULL,
+    street VARCHAR(20) NOT NULL,
+    city VARCHAR(20) NOT NULL,
+    state CHAR(2) NOT NULL,
+    zip CHAR(10) NOT NULL,
+    phone_no CHAR(13) NULL,
+    expr_date DATE NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod
+    @member_no SMALLINT,
+    @street VARCHAR(20),
+    @city VARCHAR(20),
+    @state CHAR(2),
+    @zip CHAR(10),
+    @phone_no CHAR(13),
+    @expr_date DATE
+AS
+BEGIN
+    INSERT INTO Adres
+    VALUES (@member_no, @street, @city, @state, @zip, @phone_no, @expr_date);
+END;
+GO
+
+EXEC Vvod 1,'Nevsky','SPb','RU','190000','1234567','2026-01-01';
+EXEC Vvod 2,'Tversk','Moscow','RU','101000',NULL,'2026-01-01';
+EXEC Vvod 3,'Lenina','SPb','RU','190111','7654321','2026-01-01';
+EXEC Vvod 4,'Arbat','Moscow','RU','101100',NULL,'2026-01-01';
+EXEC Vvod 5,'Sadov','Kazan','RU','420000','9999999','2026-01-01';
+GO
+
+SELECT * FROM Adres;
+GO
+
+CREATE VIEW View_city
+AS
+SELECT * FROM Adres
+WHERE city IN ('SPb','Moscow');
+GO
+
+CREATE ROLE Mayor;
+GO
+
+CREATE LOGIN Man WITH PASSWORD = 'Ar123';
+CREATE LOGIN Woman WITH PASSWORD = 'Ar456';
+GO
+
+CREATE USER Man FOR LOGIN Man;
+CREATE USER Woman FOR LOGIN Woman;
+GO
+
+EXEC sp_addrolemember 'Mayor', 'Man';
+GO
+
+GRANT SELECT, UPDATE ON Adres TO Mayor;
+GRANT SELECT ON View_city TO Man;
+GRANT EXECUTE ON Vvod TO Man;
+GRANT CREATE TABLE TO Woman;
+GO
+
+EXEC sp_helprotect @username = 'Man';
+EXEC sp_helprotect @username = 'Woman';
+GO
+
+BACKUP DATABASE City TO [Ust402-2];
+GO
+
+SELECT name FROM sys.databases WHERE name = 'City';
+GO
+
+----------------[bil3]----------------
+-- Проверка существования БД и создание
+IF DB_ID('Telefon') IS NULL
+BEGIN
+    CREATE DATABASE Telefon
+    ON 
+    PRIMARY (
+        NAME = 'Telefon_data', 
+        FILENAME = 'C:\SQLData\Telefon.mdf', 
+        SIZE = 5MB, 
+        MAXSIZE = 10MB, 
+        FILEGROWTH = 1MB
+    )
+    LOG ON (
+        NAME = 'Telefon_log', 
+        FILENAME = 'C:\SQLData\Telefon_log.ldf', 
+        SIZE = 3MB, 
+        MAXSIZE = 5MB, 
+        FILEGROWTH = 1MB
+    );
+END
+GO
+
+-- Используем базу
+USE Telefon;
+GO
+
+-- Создание таблицы Abonent
+IF OBJECT_ID('Abonent', 'U') IS NULL
+BEGIN
+    CREATE TABLE Abonent (
+        NomerAbon INT PRIMARY KEY,
+        Fio NVARCHAR(50) NOT NULL,
+        DataOplaty DATE NOT NULL,
+        AbonPlata MONEY NOT NULL DEFAULT 600
+    );
+END
+GO
+
+-- Процедура ввода данных Vvod_tel
+IF OBJECT_ID('Vvod_tel', 'P') IS NOT NULL
+    DROP PROCEDURE Vvod_tel;
+GO
+
+CREATE PROCEDURE Vvod_tel
+AS
+BEGIN
+    INSERT INTO Abonent (NomerAbon, Fio, DataOplaty, AbonPlata) VALUES
+    (1, N'Иванов Иван', '2025-12-24', 600),
+    (2, N'Петров Петр', '2025-12-24', 700),
+    (3, N'Сидоров Сидор', '2025-12-24', 600),
+    (4, N'Кузнецов Алексей', '2025-12-24', 800),
+    (5, N'Попов Николай', '2025-12-24', 600);
+END;
+GO
+
+-- Ввод данных
+EXEC Vvod_tel;
+GO
+
+-- Проверка данных
+SELECT * FROM Abonent;
+GO
+
+-- Представление View_tel
+IF OBJECT_ID('View_tel', 'V') IS NOT NULL
+    DROP VIEW View_tel;
+GO
+
+CREATE VIEW View_tel
+AS
+SELECT COUNT(*) AS ObshcheeKolichestvoAbonentov FROM Abonent;
+GO
+
+-- Роли и пользователи
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Mobil')
+    CREATE ROLE Mobil;
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Abonent1')
+    CREATE USER Abonent1 WITH PASSWORD = 'Ab123';
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Abonent2')
+    CREATE USER Abonent2 WITH PASSWORD = 'Ab456';
+GO
+
+-- Добавляем пользователей в роль
+ALTER ROLE Mobil ADD MEMBER Abonent1;
+ALTER ROLE Mobil ADD MEMBER Abonent2;
+GO
+
+-- Права для роли
+GRANT SELECT, INSERT, UPDATE, DELETE ON Abonent TO Mobil;
+GRANT EXECUTE ON Vvod_tel TO Mobil;
+GRANT SELECT ON View_tel TO Mobil;
+GO
+
+-- Дополнительные права
+GRANT BACKUP DATABASE TO Abonent1;
+GO
+
+-- Проверка прав пользователей
+EXEC sp_helprotect @username = 'Abonent1';
+EXEC sp_helprotect @username = 'Abonent2';
+GO
+
+-- Резервное копирование базы
+BACKUP DATABASE Telefon TO [Ust402-3];
+GO
+
+-- Информация о базе
+SELECT name, database_id, create_date FROM sys.databases WHERE name='Telefon';
+GO
+----------------[bil4]----------------
+-- Проверка существования БД и создание
+IF DB_ID('Book') IS NULL
+BEGIN
+    CREATE DATABASE Book
+    ON 
+    PRIMARY (
+        NAME = 'Book_data', 
+        FILENAME = 'C:\SQLData\Book.mdf', 
+        SIZE = 5MB, 
+        MAXSIZE = 10MB, 
+        FILEGROWTH = 1MB
+    )
+    LOG ON (
+        NAME = 'Book_log', 
+        FILENAME = 'C:\SQLData\Book_log.ldf', 
+        SIZE = 3MB, 
+        MAXSIZE = 5MB, 
+        FILEGROWTH = 1MB
+    );
+END
+GO
+
+USE Book;
+GO
+
+-- Создание таблицы New_Authors
+IF OBJECT_ID('New_Authors', 'U') IS NULL
+BEGIN
+    SELECT * INTO New_Authors FROM Pubs.dbo.Authors WHERE 1=0;
+END
+GO
+
+-- Представление View_Book
+IF OBJECT_ID('View_Book', 'V') IS NOT NULL
+    DROP VIEW View_Book;
+GO
+
+CREATE VIEW View_Book
+AS
+SELECT au_id, contract, au_fname, au_lname, city FROM New_Authors;
+GO
+
+-- Просмотр данных через представление, упорядочивая по фамилии
+SELECT * FROM View_Book ORDER BY au_lname;
+GO
+
+-- Добавление записи через представление
+INSERT INTO View_Book (au_id, contract, au_fname, au_lname, city)
+VALUES ('A100', 'Contract100', 'Akiko', 'Yoko', 'Tokyo');
+GO
+
+-- Изменение записи через представление
+UPDATE View_Book
+SET au_fname='Akiko', au_lname='Yokomoto'
+WHERE au_lname='Yoko';
+GO
+
+-- Удаление записи через представление
+DELETE FROM View_Book WHERE au_id='A100';
+GO
+
+-- Удаление представления
+DROP VIEW View_Book;
+GO
+
+-- Процедура для удаления таблицы
+IF OBJECT_ID('Del_Book', 'P') IS NOT NULL
+    DROP PROCEDURE Del_Book;
+GO
+
+CREATE PROCEDURE Del_Book
+AS
+BEGIN
+    DROP TABLE New_Authors;
+END;
+GO
+
+-- Роли и пользователи
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Redactor')
+    CREATE ROLE Redactor;
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Author1')
+    CREATE USER Author1 WITH PASSWORD = 'Red100';
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Author2')
+    CREATE USER Author2 WITH PASSWORD = 'Red200';
+GO
+
+-- Добавляем пользователей в роль
+ALTER ROLE Redactor ADD MEMBER Author1;
+ALTER ROLE Redactor ADD MEMBER Author2;
+GO
+
+-- Права для роли
+GRANT SELECT, INSERT, UPDATE, DELETE ON New_Authors TO Redactor;
+GRANT EXECUTE ON Del_Book TO Redactor;
+GO
+
+-- Дополнительные права
+GRANT BACKUP DATABASE TO Author1;
+GRANT SELECT ON New_Authors TO Author2;
+GO
+
+-- Проверка прав пользователей
+EXEC sp_helprotect @username = 'Author1';
+EXEC sp_helprotect @username = 'Author2';
+GO
+
+-- Резервное копирование базы
+BACKUP DATABASE Book TO [Ust402-4];
+GO
+
+-- Информация о базе
+SELECT name, database_id, create_date FROM sys.databases WHERE name='Book';
+GO
+----------------[bil5]----------------
+USE master;
+GO
+
+IF DB_ID(N'Mirror') IS NULL
+BEGIN
+    CREATE DATABASE Mirror
+    ON
+    (
+        NAME = Mirror_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = Mirror_Log,
+        SIZE = 3MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name = 'Mirror';
+GO
+
+USE Mirror;
+GO
+
+SELECT *
+INTO Piter
+FROM Pubs.dbo.Authors;
+GO
+
+CREATE PROCEDURE Del_Mirror
+AS
+BEGIN
+    DELETE FROM Piter
+    WHERE city <> 'Palo Alto';
+END;
+GO
+
+CREATE PROCEDURE Upd_Mirror
+AS
+BEGIN
+    UPDATE Piter
+    SET city = 'SPb'
+    WHERE city = 'Palo Alto';
+END;
+GO
+
+CREATE VIEW View_Mirror
+AS
+SELECT COUNT(*) AS CntAuthorsSPb
+FROM Piter
+WHERE city = 'SPb';
+GO
+
+CREATE ROLE Mir;
+GO
+
+CREATE LOGIN Author1 WITH PASSWORD='Aut111';
+CREATE LOGIN Author2 WITH PASSWORD='Aut222';
+GO
+
+CREATE USER Author1 FOR LOGIN Author1;
+CREATE USER Author2 FOR LOGIN Author2;
+GO
+
+EXEC sp_addrolemember 'Mir','Author1';
+EXEC sp_addrolemember 'Mir','Author2';
+GO
+
+GRANT EXECUTE ON Del_Mirror TO Mir;
+GRANT EXECUTE ON Upd_Mirror TO Mir;
+GRANT SELECT, UPDATE ON Piter TO Author1;
+GO
+
+EXEC sp_helprotect @username='Author1';
+EXEC sp_helprotect @username='Author2';
+GO
+
+BACKUP DATABASE Mirror TO [Ust402-5];
+GO
+
+EXEC sp_helpdb Mirror;
+GO
+----------------[bil6]----------------
+USE master;
+GO
+
+IF DB_ID(N'Sphere') IS NULL
+BEGIN
+    CREATE DATABASE Sphere
+    ON
+    (
+        NAME = Sphere_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = Sphere_Log,
+        SIZE = 3MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name = 'Sphere';
+GO
+
+USE Sphere;
+GO
+
+CREATE TABLE Member
+(
+    member_no INT PRIMARY KEY,
+    lastname NVARCHAR(50) NOT NULL,
+    city NVARCHAR(50) NOT NULL
+);
+GO
+
+CREATE TABLE Adult
+(
+    adult_no INT PRIMARY KEY,
+    member_no INT NOT NULL,
+    phone_no CHAR(13) NULL,
+    CONSTRAINT FK_Adult_Member
+        FOREIGN KEY (member_no) REFERENCES Member(member_no)
+);
+GO
+
+INSERT INTO Member VALUES
+(1,N'Иванов',N'СПб'),
+(2,N'Петров',N'Москва'),
+(3,N'Сидоров',N'Казань');
+GO
+
+INSERT INTO Adult VALUES
+(1,1,'1234567'),
+(2,2,'2345678'),
+(3,3,'3456789');
+GO
+
+CREATE PROCEDURE Upd_Sphere
+    @AdultNo INT,
+    @Phone CHAR(13)
+AS
+BEGIN
+    UPDATE Adult
+    SET phone_no = @Phone
+    WHERE adult_no = @AdultNo;
+END;
+GO
+
+CREATE VIEW View_Sphere
+AS
+SELECT M.member_no, M.lastname, M.city, A.phone_no
+FROM Member M
+JOIN Adult A ON M.member_no = A.member_no;
+GO
+
+CREATE ROLE Sphere1;
+GO
+
+CREATE LOGIN Sph1 WITH PASSWORD='Sph333';
+CREATE LOGIN Sph2 WITH PASSWORD='Sph444';
+GO
+
+CREATE USER Sph1 FOR LOGIN Sph1;
+CREATE USER Sph2 FOR LOGIN Sph2;
+GO
+
+EXEC sp_addrolemember 'Sphere1','Sph1';
+EXEC sp_addrolemember 'Sphere1','Sph2';
+GO
+
+GRANT EXECUTE ON Upd_Sphere TO Sphere1;
+GRANT SELECT, UPDATE ON Member TO Sph1;
+GO
+
+EXEC sp_helprotect @username='Sph1';
+EXEC sp_helprotect @username='Sph2';
+GO
+
+BACKUP DATABASE Sphere TO [Ust402-6];
+GO
+
+EXEC sp_helpdb Sphere;
+GO
+
+----------------[bil7]----------------
+USE master;
+GO
+
+IF DB_ID(N'Shop') IS NULL
+BEGIN
+    CREATE DATABASE Shop
+    ON
+    (
+        NAME = Shop_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = Shop_Log,
+        SIZE = 3MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name = 'Shop';
+GO
+
+USE Shop;
+GO
+
+SELECT *
+INTO ORDDetails1
+FROM Northwind.dbo.[Order Details];
+GO
+
+CREATE PROCEDURE Del_Shop
+AS
+BEGIN
+    DELETE FROM ORDDetails1
+    WHERE UnitPrice = (SELECT MIN(UnitPrice) FROM ORDDetails1)
+       OR UnitPrice = (SELECT MAX(UnitPrice) FROM ORDDetails1);
+END;
+GO
+
+CREATE PROCEDURE Upd_Shop
+AS
+BEGIN
+    UPDATE ORDDetails1
+    SET UnitPrice = UnitPrice + 100
+    WHERE OrderID = 10265;
+END;
+GO
+
+CREATE VIEW View_Shop
+AS
+SELECT *
+FROM ORDDetails1
+WHERE OrderID IN (10250,10255);
+GO
+
+CREATE ROLE RoleShop;
+GO
+
+CREATE LOGIN Shop1 WITH PASSWORD='Shop234';
+CREATE LOGIN Shop2 WITH PASSWORD='Shop235';
+GO
+
+CREATE USER Shop1 FOR LOGIN Shop1;
+CREATE USER Shop2 FOR LOGIN Shop2;
+GO
+
+EXEC sp_addrolemember 'RoleShop','Shop1';
+EXEC sp_addrolemember 'RoleShop','Shop2';
+GO
+
+GRANT EXECUTE ON Del_Shop TO RoleShop;
+GRANT SELECT, UPDATE ON ORDDetails1 TO Shop2;
+GO
+
+EXEC sp_helprotect @username='Shop1';
+EXEC sp_helprotect @username='Shop2';
+GO
+
+BACKUP DATABASE Shop TO [Ust402-7];
+GO
+
+EXEC sp_helpdb Shop;
+GO
+----------------[bil8]----------------
+USE master;
+GO
+
+IF DB_ID(N'MyStud') IS NULL
+BEGIN
+    CREATE DATABASE MyStud
+    ON
+    (
+        NAME = MyStud_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = MyStud_Log,
+        SIZE = 2MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name = 'MyStud';
+GO
+
+USE MyStud;
+GO
+
+CREATE TABLE Anketa
+(
+    StudID INT PRIMARY KEY,
+    Surname NVARCHAR(50) NOT NULL,
+    Name NVARCHAR(50) NOT NULL,
+    BirthYear INT NOT NULL,
+    City NVARCHAR(50) NOT NULL DEFAULT N'СПб',
+    Age INT NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Stud
+    @ID INT,
+    @Surname NVARCHAR(50),
+    @Name NVARCHAR(50),
+    @Birth INT,
+    @City NVARCHAR(50),
+    @Age INT
+AS
+BEGIN
+    INSERT INTO Anketa
+    VALUES (@ID,@Surname,@Name,@Birth,@City,@Age);
+END;
+GO
+
+EXEC Vvod_Stud 1,N'Иванов',N'Иван',2001,N'СПб',23;
+EXEC Vvod_Stud 2,N'Петров',N'Петр',2000,N'Москва',24;
+EXEC Vvod_Stud 3,N'Сидоров',N'Алексей',2002,N'СПб',22;
+EXEC Vvod_Stud 4,N'Кузнецов',N'Максим',1999,N'Казань',25;
+EXEC Vvod_Stud 5,N'ВАШАФАМИЛИЯ',N'ВАШЕИМЯ',2001,N'СПб',23;
+GO
+
+SELECT * FROM Anketa;
+GO
+
+CREATE VIEW View_Stud
+AS
+SELECT *
+FROM Anketa
+WHERE BirthYear BETWEEN 2000 AND 2002;
+GO
+
+UPDATE Anketa
+SET Age = Age * 2
+WHERE Surname = N'ВАШАФАМИЛИЯ';
+GO
+
+CREATE ROLE RoleStud;
+GO
+
+CREATE LOGIN Stud1 WITH PASSWORD='Stud777';
+CREATE LOGIN Stud2 WITH PASSWORD='Stud666';
+GO
+
+CREATE USER Stud1 FOR LOGIN Stud1;
+CREATE USER Stud2 FOR LOGIN Stud2;
+GO
+
+EXEC sp_addrolemember 'RoleStud','Stud1';
+EXEC sp_addrolemember 'RoleStud','Stud2';
+GO
+
+GRANT SELECT, UPDATE, DELETE ON Anketa TO RoleStud;
+GRANT SELECT ON View_Stud TO Stud2;
+GRANT EXECUTE ON Vvod_Stud TO Stud2;
+GRANT BACKUP DATABASE TO Stud1;
+GO
+
+EXEC sp_helprotect @username='Stud1';
+EXEC sp_helprotect @username='Stud2';
+GO
+
+BACKUP DATABASE MyStud TO [Ust402-8];
+GO
+
+EXEC sp_helpdb MyStud;
+GO
+----------------[bil9]----------------
+USE master;
+GO
+
+IF DB_ID(N'MirBD') IS NULL
+BEGIN
+    CREATE DATABASE MirBD
+    ON
+    (
+        NAME = MirBD_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = MirBD_Log,
+        SIZE = 2MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name='MirBD';
+GO
+
+USE MirBD;
+GO
+
+CREATE TABLE Pristable
+(
+    integer INT NOT NULL,
+    name CHAR(20) NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Mir
+    @i INT,
+    @n CHAR(20)
+AS
+BEGIN
+    INSERT INTO Pristable(integer,name) VALUES(@i,@n);
+END;
+GO
+
+EXEC Vvod_Mir 1,'anaconda';
+EXEC Vvod_Mir 2,'bar harbor';
+EXEC Vvod_Mir 3,'cape cod';
+EXEC Vvod_Mir 4,'dubrovnik';
+GO
+
+SELECT * FROM Pristable;
+GO
+
+ALTER TABLE Pristable ADD city CHAR(20);
+GO
+
+UPDATE Pristable SET city='Paris' WHERE integer IN (3,4);
+GO
+
+CREATE VIEW View_Mir
+AS
+SELECT * FROM Pristable WHERE integer IN (2,3,4);
+GO
+
+CREATE PROCEDURE Del_Mir
+AS
+BEGIN
+    DELETE FROM Pristable WHERE integer IN (2,4);
+END;
+GO
+
+EXEC Del_Mir;
+GO
+
+SELECT * FROM Pristable;
+GO
+
+CREATE ROLE RoleMir;
+GO
+
+CREATE LOGIN Mir1 WITH PASSWORD='Mir888';
+CREATE LOGIN Mir2 WITH PASSWORD='Mir555';
+GO
+
+CREATE USER Mir1 FOR LOGIN Mir1;
+CREATE USER Mir2 FOR LOGIN Mir2;
+GO
+
+EXEC sp_addrolemember 'RoleMir','Mir1';
+GO
+
+GRANT SELECT, UPDATE, DELETE ON Pristable TO RoleMir;
+GRANT SELECT ON View_Mir TO Mir2;
+GRANT EXECUTE ON Vvod_Mir TO Mir2;
+GRANT BACKUP DATABASE TO Mir1;
+GO
+
+EXEC sp_helprotect @username='Mir1';
+EXEC sp_helprotect @username='Mir2';
+GO
+
+BACKUP DATABASE MirBD TO [Ust402-9];
+GO
+
+EXEC sp_helpdb MirBD;
+GO
+
+
+----------------[bil10]----------------
+USE master;
+GO
+
+IF DB_ID(N'Prime402_1r') IS NULL
+BEGIN
+    CREATE DATABASE Prime402_1r
+    ON
+    (
+        NAME = PR_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = PR_Log,
+        SIZE = 3MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name='Prime402_1r';
+GO
+
+USE Prime402_1r;
+GO
+
+CREATE TABLE PRIMER
+(
+    Cod INT NOT NULL PRIMARY KEY,
+    FirstName VARCHAR(30) NOT NULL,
+    LastName VARCHAR(30) NOT NULL,
+    YearBorn INT NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_PR
+    @c INT,@f VARCHAR(30),@l VARCHAR(30),@y INT
+AS
+BEGIN
+    INSERT INTO PRIMER VALUES(@c,@f,@l,@y);
+END;
+GO
+
+EXEC Vvod_PR 1,'Ivan','Ivanov',1999;
+EXEC Vvod_PR 2,'Petr','Petrov',2000;
+EXEC Vvod_PR 3,'Alex','Sidorov',2001;
+EXEC Vvod_PR 4,'Max','Kuznetsov',2002;
+EXEC Vvod_PR 5,'Den','Orlov',1998;
+GO
+
+SELECT * FROM PRIMER;
+GO
+
+CREATE PROCEDURE Upd_PR
+    @Old VARCHAR(30),
+    @New VARCHAR(30)
+AS
+BEGIN
+    UPDATE PRIMER SET LastName=@New WHERE LastName=@Old;
+END;
+GO
+
+CREATE VIEW View_PR
+AS
+SELECT * FROM PRIMER WHERE YearBorn BETWEEN 1999 AND 2002;
+GO
+
+CREATE ROLE RolePR;
+GO
+
+CREATE LOGIN PR1 WITH PASSWORD='PR234';
+CREATE LOGIN PR2 WITH PASSWORD='PR235';
+GO
+
+CREATE USER PR1 FOR LOGIN PR1;
+CREATE USER PR2 FOR LOGIN PR2;
+GO
+
+EXEC sp_addrolemember 'RolePR','PR1';
+EXEC sp_addrolemember 'RolePR','PR2';
+GO
+
+GRANT EXECUTE ON Vvod_PR TO RolePR;
+GRANT EXECUTE ON Upd_PR TO RolePR;
+GRANT SELECT, UPDATE ON PRIMER TO PR2;
+GO
+
+EXEC sp_helprotect @username='PR1';
+EXEC sp_helprotect @username='PR2';
+GO
+
+BACKUP DATABASE Prime402_1r TO [Ust402-10];
+GO
+
+EXEC sp_helpdb Prime402_1r;
+GO
+----------------[bil11]----------------
+USE master;
+GO
+
+IF DB_ID(N'Univer') IS NULL
+BEGIN
+    CREATE DATABASE Univer
+    ON
+    (
+        NAME = Univ_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = Univ_Log,
+        SIZE = 2MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name='Univer';
+GO
+
+USE Univer;
+GO
+
+CREATE TABLE Table1
+(
+    Kod INT PRIMARY KEY,
+    Fam NVARCHAR(50),
+    Im NVARCHAR(50),
+    Passport CHAR(10) UNIQUE NULL CHECK (Passport LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+);
+GO
+
+CREATE TABLE Table2
+(
+    Kod INT PRIMARY KEY,
+    Gr CHAR(3) NULL CHECK (Gr LIKE '[1-9][0-9][0-9]'),
+    Faculty NVARCHAR(50),
+    Curator NVARCHAR(50),
+    CONSTRAINT FK_T2 FOREIGN KEY(Kod) REFERENCES Table1(Kod)
+);
+GO
+
+CREATE PROCEDURE Vvod1
+    @k INT,@f NVARCHAR(50),@i NVARCHAR(50),@p CHAR(10)
+AS
+BEGIN
+    INSERT INTO Table1 VALUES(@k,@f,@i,@p);
+END;
+GO
+
+CREATE PROCEDURE Vvod2
+    @k INT,@g CHAR(3),@fac NVARCHAR(50),@c NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO Table2 VALUES(@k,@g,@fac,@c);
+END;
+GO
+
+EXEC Vvod1 1,N'Иванов',N'Иван','1234567890';
+EXEC Vvod1 2,N'Петров',N'Петр','2345678901';
+EXEC Vvod1 3,N'Сидоров',N'Алексей',NULL;
+GO
+
+EXEC Vvod2 1,'101',N'ИТ',N'Куратор1';
+EXEC Vvod2 2,'102',N'Эконом',N'Куратор2';
+EXEC Vvod2 3,NULL,N'ИТ',N'Куратор3';
+GO
+
+CREATE VIEW View1
+AS
+SELECT * FROM Table1 t1
+JOIN Table2 t2 ON t1.Kod=t2.Kod
+WHERE Faculty=N'ИТ';
+GO
+
+CREATE PROCEDURE Del1
+    @k INT
+AS
+BEGIN
+    DELETE FROM Table2 WHERE Kod=@k;
+    DELETE FROM Table1 WHERE Kod=@k;
+END;
+GO
+
+CREATE ROLE RoleUn;
+GO
+
+CREATE LOGIN Un1 WITH PASSWORD='Un881';
+CREATE LOGIN Un2 WITH PASSWORD='Un551';
+GO
+
+CREATE USER Un1 FOR LOGIN Un1;
+CREATE USER Un2 FOR LOGIN Un2;
+GO
+
+EXEC sp_addrolemember 'RoleUn','Un1';
+EXEC sp_addrolemember 'RoleUn','Un2';
+GO
+
+GRANT SELECT, UPDATE, DELETE ON Table1 TO RoleUn;
+GRANT SELECT, UPDATE, DELETE ON Table2 TO RoleUn;
+GRANT BACKUP DATABASE TO Un1;
+GO
+
+EXEC sp_helprotect @username='Un1';
+EXEC sp_helprotect @username='Un2';
+GO
+
+BACKUP DATABASE Univer TO [Ust402-11];
+GO
+
+EXEC sp_helpdb Univer;
+GO
+----------------[bil12]----------------
+USE master;
+GO
+
+IF DB_ID(N'Les') IS NULL
+BEGIN
+    CREATE DATABASE Les
+    ON
+    (
+        NAME = Les_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = Les_Log,
+        SIZE = 3MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name='Les';
+GO
+
+USE Les;
+GO
+
+CREATE TABLE Grib
+(
+    Kod INT PRIMARY KEY,
+    Name NVARCHAR(50) NOT NULL,
+    Data DATE NOT NULL,
+    Qty INT NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_les
+    @k INT,@n NVARCHAR(50),@d DATE,@q INT
+AS
+BEGIN
+    INSERT INTO Grib VALUES(@k,@n,@d,@q);
+END;
+GO
+
+EXEC Vvod_les 1,N'Белый','2024-09-01',10;
+EXEC Vvod_les 2,N'Подберезовик','2024-09-01',8;
+EXEC Vvod_les 3,N'Лисичка','2024-09-02',5;
+EXEC Vvod_les 4,N'Белый','2024-09-03',12;
+EXEC Vvod_les 5,N'Подберезовик','2024-09-03',9;
+GO
+
+SELECT * FROM Grib;
+GO
+
+CREATE VIEW View_les
+AS
+SELECT Qty,Data FROM Grib
+WHERE Name IN (N'Белый',N'Подберезовик');
+GO
+
+CREATE PROCEDURE Up_les
+    @n NVARCHAR(50),
+    @d DATE,
+    @q INT
+AS
+BEGIN
+    UPDATE Grib SET Qty=@q WHERE Name=@n AND Data=@d;
+END;
+GO
+
+CREATE ROLE Grib1;
+GO
+
+CREATE LOGIN Les1 WITH PASSWORD='Gr123';
+CREATE LOGIN Les2 WITH PASSWORD='Gr456';
+GO
+
+CREATE USER Les1 FOR LOGIN Les1;
+CREATE USER Les2 FOR LOGIN Les2;
+GO
+
+EXEC sp_addrolemember 'Grib1','Les1';
+EXEC sp_addrolemember 'Grib1','Les2';
+GO
+
+GRANT SELECT, UPDATE, DELETE ON Grib TO Grib1;
+GRANT SELECT ON View_les TO Les1;
+GRANT EXECUTE ON Vvod_les TO Les1;
+GRANT BACKUP DATABASE TO Les2;
+GO
+
+EXEC sp_helprotect @username='Les1';
+EXEC sp_helprotect @username='Les2';
+GO
+
+BACKUP DATABASE Les TO [Ust402-12];
+GO
+
+EXEC sp_helpdb Les;
+GO
+
+----------------[bil13]----------------
+USE master;
+GO
+
+IF DB_ID(N'Primer402_2') IS NULL
+BEGIN
+    CREATE DATABASE Primer402_2
+    ON
+    (
+        NAME = P4022_Data,
+        SIZE = 4MB,
+        MAXSIZE = 12MB,
+        FILEGROWTH = 2MB
+    )
+    LOG ON
+    (
+        NAME = P4022_Log,
+        SIZE = 2MB,
+        MAXSIZE = 8MB,
+        FILEGROWTH = 2MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name='Primer402_2';
+GO
+
+USE Primer402_2;
+GO
+
+SELECT *
+INTO NewTitles
+FROM Pubs.dbo.Titles;
+GO
+
+CREATE PROCEDURE Del_Primer
+AS
+BEGIN
+    DELETE FROM NewTitles
+    WHERE Price > 100 AND Price < 200;
+END;
+GO
+
+CREATE PROCEDURE Upd_Primer
+    @NewPrice MONEY
+AS
+BEGIN
+    UPDATE NewTitles
+    SET Price = @NewPrice
+    WHERE Title_id IN ('PC8888','PC9999','TC777');
+END;
+GO
+
+CREATE VIEW View_Primer
+AS
+SELECT Title_id, Title, Price, Ytd_sales
+FROM NewTitles;
+GO
+
+CREATE ROLE Manager;
+GO
+
+CREATE LOGIN Prim1 WITH PASSWORD='Prim987';
+CREATE LOGIN Prim2 WITH PASSWORD='Prim654';
+GO
+
+CREATE USER Prim1 FOR LOGIN Prim1;
+CREATE USER Prim2 FOR LOGIN Prim2;
+GO
+
+EXEC sp_addrolemember 'Manager','Prim1';
+EXEC sp_addrolemember 'Manager','Prim2';
+GO
+
+GRANT EXECUTE ON Del_Primer TO Manager;
+GRANT EXECUTE ON Upd_Primer TO Manager;
+GRANT SELECT, UPDATE ON NewTitles TO Prim1;
+GO
+
+EXEC sp_helprotect @username='Prim1';
+EXEC sp_helprotect @username='Prim2';
+GO
+
+BACKUP DATABASE Primer402_2 TO [Ust402-13];
+GO
+
+EXEC sp_helpdb Primer402_2;
+GO
+
+----------------[bil14]----------------
+USE master;
+GO
+
+IF DB_ID(N'Primer402_3') IS NULL
+BEGIN
+    CREATE DATABASE Primer402_3
+    ON
+    (
+        NAME = P4023_Data,
+        SIZE = 5MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = P4023_Log,
+        SIZE = 2MB
+    );
+END;
+GO
+
+USE Primer402_3;
+GO
+
+CREATE TABLE Veteran
+(
+    VetCode INT PRIMARY KEY,
+    FIO NVARCHAR(100) NULL,
+    CertNo CHAR(10) NOT NULL UNIQUE,
+    InvalidGroup INT NULL CHECK (InvalidGroup IN (1,2,3)),
+    Age INT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Prim
+    @c INT,@f NVARCHAR(100),@cert CHAR(10),@grp INT,@age INT
+AS
+BEGIN
+    INSERT INTO Veteran VALUES(@c,@f,@cert,@grp,@age);
+END;
+GO
+
+EXEC Vvod_Prim 1,N'Иванов Иван','1111111111',NULL,NULL;
+EXEC Vvod_Prim 2,N'Петров Петр','2222222222',2,90;
+EXEC Vvod_Prim 3,N'Сидоров Алексей','3333333333',NULL,NULL;
+EXEC Vvod_Prim 4,N'Кузнецов Максим','4444444444',1,86;
+EXEC Vvod_Prim 5,N'Орлов Денис','5555555555',3,70;
+GO
+
+SELECT * FROM Veteran;
+GO
+
+CREATE VIEW View1
+AS
+SELECT * FROM Veteran
+WHERE InvalidGroup IS NULL AND Age IS NULL;
+GO
+
+SELECT COUNT(*) AS Cnt85Plus
+FROM Veteran
+WHERE Age > 85;
+GO
+
+CREATE ROLE Manager;
+GO
+
+CREATE LOGIN Veter1 WITH PASSWORD='Vrn123';
+CREATE LOGIN Veter2 WITH PASSWORD='Vrn456';
+GO
+
+CREATE USER Veter1 FOR LOGIN Veter1;
+CREATE USER Veter2 FOR LOGIN Veter2;
+GO
+
+EXEC sp_addrolemember 'Manager','Veter1';
+GO
+
+GRANT SELECT, UPDATE ON Veteran TO Manager;
+GRANT SELECT ON View1 TO Veter2;
+GRANT EXECUTE ON Vvod_Prim TO Veter2;
+GO
+
+EXEC sp_helprotect @username='Veter1';
+EXEC sp_helprotect @username='Veter2';
+GO
+
+BACKUP DATABASE Primer402_3 TO [Ust402-14];
+GO
+
+----------------[bil15]----------------
+USE master;
+GO
+
+IF DB_ID(N'Sport') IS NULL
+BEGIN
+    CREATE DATABASE Sport
+    ON
+    (
+        NAME = Sport_Data,
+        SIZE = 5MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = Sport_Log,
+        SIZE = 2MB
+    );
+END;
+GO
+
+USE Sport;
+GO
+
+CREATE TABLE Sportsmen
+(
+    SportCode INT PRIMARY KEY,
+    Passport CHAR(10) NOT NULL UNIQUE,
+    FIO NVARCHAR(100) NULL,
+    BirthDate DATE NULL,
+    Rank NVARCHAR(50) NULL,
+    Age INT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Sport
+    @c INT,@p CHAR(10),@f NVARCHAR(100),@b DATE,@r NVARCHAR(50),@a INT
+AS
+BEGIN
+    INSERT INTO Sportsmen VALUES(@c,@p,@f,@b,@r,@a);
+END;
+GO
+
+EXEC Vvod_Sport 1,'1111111111',N'Иванов Иван','2001-06-01',N'мастер спорта',23;
+EXEC Vvod_Sport 2,'2222222222',N'Петров Петр','1999-03-01',N'чемпион России',25;
+EXEC Vvod_Sport 3,'3333333333',N'Сидоров Алексей','2002-07-10',N'мастер спорта',22;
+EXEC Vvod_Sport 4,'4444444444',N'Орлов Денис','1998-01-01',N'чемпион России',26;
+EXEC Vvod_Sport 5,'5555555555',N'Кузнецов Максим','2000-08-15',N'мастер спорта',24;
+GO
+
+SELECT * FROM Sportsmen;
+GO
+
+CREATE VIEW View1
+AS
+SELECT * FROM Sportsmen
+WHERE BirthDate > '2000-05-31'
+  AND Rank = N'мастер спорта';
+GO
+
+SELECT COUNT(*) AS ChampCount
+FROM Sportsmen
+WHERE Rank = N'чемпион России';
+GO
+
+CREATE ROLE Trener;
+GO
+
+CREATE LOGIN Sportsmen1 WITH PASSWORD='Sport123';
+CREATE LOGIN Sportsmen2 WITH PASSWORD='Sport456';
+GO
+
+CREATE USER Sportsmen1 FOR LOGIN Sportsmen1;
+CREATE USER Sportsmen2 FOR LOGIN Sportsmen2;
+GO
+
+EXEC sp_addrolemember 'Trener','Sportsmen1';
+GO
+
+GRANT SELECT, UPDATE ON Sportsmen TO Trener;
+GRANT SELECT ON View1 TO Sportsmen2;
+GRANT EXECUTE ON Vvod_Sport TO Sportsmen2;
+GO
+
+EXEC sp_helprotect @username='Sportsmen1';
+EXEC sp_helprotect @username='Sportsmen2';
+GO
+
+BACKUP DATABASE Sport TO [Ust402-15];
+GO
+
+EXEC sp_helpdb Sport;
+GO
+----------------[bil16]----------------
+USE master;
+GO
+
+IF DB_ID(N'Shoy_Maska') IS NULL
+BEGIN
+    CREATE DATABASE Shoy_Maska
+    ON
+    (
+        NAME = Mask_Data,
+        SIZE = 4MB,
+        MAXSIZE = 15MB,
+        FILEGROWTH = 2MB
+    )
+    LOG ON
+    (
+        NAME = Mask_Log,
+        SIZE = 3MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 2MB
+    );
+END;
+GO
+
+USE Shoy_Maska;
+GO
+
+CREATE TABLE Member
+(
+    Code INT PRIMARY KEY,
+    FIO NVARCHAR(100) NOT NULL,
+    MaskName NVARCHAR(50) NOT NULL UNIQUE,
+    ShowDate DATE NOT NULL,
+    Score INT NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Maska
+    @c INT,@f NVARCHAR(100),@m NVARCHAR(50),@d DATE,@s INT
+AS
+BEGIN
+    INSERT INTO Member VALUES(@c,@f,@m,@d,@s);
+END;
+GO
+
+EXEC Vvod_Maska 1,N'Участник1',N'Банан','2024-10-01',80;
+EXEC Vvod_Maska 2,N'Участник2',N'Солнце','2024-10-01',85;
+EXEC Vvod_Maska 3,N'Участник3',N'Попугай','2024-10-02',90;
+EXEC Vvod_Maska 4,N'Участник4',N'Змея','2024-10-02',70;
+EXEC Vvod_Maska 5,N'Участник5',N'Тигр','2024-10-03',95;
+GO
+
+SELECT * FROM Member;
+GO
+
+CREATE VIEW View_Maska
+AS
+SELECT * FROM Member WHERE ShowDate = '2024-10-01';
+GO
+
+CREATE PROCEDURE Up_Maska
+    @c INT,@s INT
+AS
+BEGIN
+    UPDATE Member SET Score=@s WHERE Code=@c;
+END;
+GO
+
+CREATE ROLE Maska;
+GO
+
+CREATE LOGIN Mas1 WITH PASSWORD='MS123';
+CREATE LOGIN Mas2 WITH PASSWORD='MS456';
+GO
+
+CREATE USER Mas1 FOR LOGIN Mas1;
+CREATE USER Mas2 FOR LOGIN Mas2;
+GO
+
+EXEC sp_addrolemember 'Maska','Mas1';
+EXEC sp_addrolemember 'Maska','Mas2';
+GO
+
+GRANT SELECT, UPDATE, DELETE ON Member TO Maska;
+GRANT SELECT ON View_Maska TO Mas1;
+GRANT EXECUTE ON Vvod_Maska TO Mas1;
+GRANT EXECUTE ON Up_Maska TO Mas2;
+GRANT SELECT ON Member TO Mas2;
+GO
+
+EXEC sp_helprotect @username='Mas1';
+EXEC sp_helprotect @username='Mas2';
+GO
+
+BACKUP DATABASE Shoy_Maska TO [Ust402-16];
+GO
+
+EXEC sp_helpdb Shoy_Maska;
+GO
+
+----------------[bil17]----------------
+USE master;
+GO
+
+IF DB_ID(N'Shoy_Golos') IS NULL
+BEGIN
+    CREATE DATABASE Shoy_Golos
+    ON
+    (
+        NAME = Golos_Data,
+        SIZE = 4MB,
+        MAXSIZE = 8MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = Golos_Log,
+        SIZE = 1MB,
+        MAXSIZE = 4MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name='Shoy_Golos';
+GO
+
+USE Shoy_Golos;
+GO
+
+CREATE TABLE Teacher
+(
+    TeacherID INT PRIMARY KEY,
+    NickName NVARCHAR(50) NOT NULL
+);
+GO
+
+CREATE TABLE Member
+(
+    MemberID INT PRIMARY KEY,
+    LastName NVARCHAR(50) NOT NULL
+        CHECK (LastName COLLATE Cyrillic_General_CS_AS LIKE N'[А-Я]%'),
+    FirstName NVARCHAR(50) NOT NULL
+        CHECK (FirstName COLLATE Cyrillic_General_CS_AS LIKE N'[А-Я]%'),
+    City NVARCHAR(50) NOT NULL,
+    Age INT NOT NULL,
+    Song NVARCHAR(100) NOT NULL,
+    TeacherID INT NOT NULL,
+    CONSTRAINT FK_Member_Teacher
+        FOREIGN KEY (TeacherID) REFERENCES Teacher(TeacherID)
+);
+GO
+
+CREATE PROCEDURE Vvod_Teacher
+    @id INT,
+    @nick NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO Teacher VALUES (@id, @nick);
+END;
+GO
+
+CREATE PROCEDURE Vvod_Member
+    @id INT,
+    @ln NVARCHAR(50),
+    @fn NVARCHAR(50),
+    @city NVARCHAR(50),
+    @age INT,
+    @song NVARCHAR(100),
+    @tid INT
+AS
+BEGIN
+    INSERT INTO Member
+    VALUES (@id,@ln,@fn,@city,@age,@song,@tid);
+END;
+GO
+
+EXEC Vvod_Teacher 1,N'Баста';
+EXEC Vvod_Teacher 2,N'Полина';
+EXEC Vvod_Teacher 3,N'Лепс';
+GO
+
+EXEC Vvod_Member 1,N'Иванов',N'Илья',N'СПб',12,N'Песня1',1;
+EXEC Vvod_Member 2,N'Петров',N'Максим',N'СПб',14,N'Песня2',1;
+EXEC Vvod_Member 3,N'Сидоров',N'Артем',N'Москва',16,N'Песня3',2;
+EXEC Vvod_Member 4,N'Орлов',N'Денис',N'СПб',10,N'Песня4',3;
+EXEC Vvod_Member 5,N'Кузнецов',N'Иван',N'Казань',15,N'Песня5',2;
+GO
+
+SELECT * FROM Teacher;
+SELECT * FROM Member;
+GO
+
+CREATE VIEW View_member1
+AS
+SELECT *
+FROM Member
+WHERE Age BETWEEN 10 AND 15
+  AND City = N'СПб';
+GO
+
+CREATE VIEW View_member2
+AS
+SELECT m.*
+FROM Member m
+JOIN Teacher t ON m.TeacherID = t.TeacherID
+WHERE t.NickName = N'Баста';
+GO
+
+CREATE PROCEDURE Up_Teacher
+    @id INT,
+    @newname NVARCHAR(50)
+AS
+BEGIN
+    UPDATE Teacher
+    SET NickName = @newname
+    WHERE TeacherID = @id;
+END;
+GO
+
+CREATE ROLE Golos;
+GO
+
+CREATE LOGIN Us1 WITH PASSWORD='Golos345';
+CREATE LOGIN Us2 WITH PASSWORD='Golos678';
+GO
+
+CREATE USER Us1 FOR LOGIN Us1;
+CREATE USER Us2 FOR LOGIN Us2;
+GO
+
+EXEC sp_addrolemember 'Golos','Us1';
+EXEC sp_addrolemember 'Golos','Us2';
+GO
+
+GRANT SELECT ON View_member1 TO Golos;
+GRANT SELECT ON View_member2 TO Golos;
+GRANT EXECUTE ON Vvod_Member TO Us1, Us2;
+GRANT EXECUTE ON Vvod_Teacher TO Us1, Us2;
+GO
+
+EXEC sp_helprotect @username='Us1';
+EXEC sp_helprotect @username='Us2';
+GO
+
+BACKUP DATABASE Shoy_Golos TO [Ust402-17];
+GO
+
+EXEC sp_helpdb Shoy_Golos;
+GO
+----------------[bil18]----------------
+USE master;
+GO
+
+IF DB_ID(N'News') IS NULL
+BEGIN
+    CREATE DATABASE News
+    ON
+    (
+        NAME = News_Data,
+        SIZE = 5MB,
+        MAXSIZE = 10MB,
+        FILEGROWTH = 1MB
+    )
+    LOG ON
+    (
+        NAME = News_Log,
+        SIZE = 3MB,
+        MAXSIZE = 5MB,
+        FILEGROWTH = 1MB
+    );
+END;
+GO
+
+SELECT name FROM sys.databases WHERE name='News';
+GO
+
+USE News;
+GO
+
+CREATE TABLE Events
+(
+    EventID INT PRIMARY KEY,
+    EventName NVARCHAR(100) NOT NULL,
+    EventDate DATE NOT NULL,
+    EventTime TIME NOT NULL,
+    City NVARCHAR(50) NOT NULL,
+    Author NVARCHAR(50) NOT NULL
+        CHECK (Author COLLATE Cyrillic_General_CS_AS LIKE N'[А-Я]%'),
+    Channel NVARCHAR(50) NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Events
+    @id INT,
+    @name NVARCHAR(100),
+    @d DATE,
+    @t TIME,
+    @city NVARCHAR(50),
+    @auth NVARCHAR(50),
+    @ch NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO Events
+    VALUES (@id,@name,@d,@t,@city,@auth,@ch);
+END;
+GO
+
+EXEC Vvod_Events 1,N'Событие1',GETDATE(), '13:00',N'Москва',N'Иванов',N'Россия1';
+EXEC Vvod_Events 2,N'Событие2',GETDATE()-3,'11:30',N'СПб',N'Петров',N'НТВ';
+EXEC Vvod_Events 3,N'Событие3',GETDATE()-6,'15:00',N'Казань',N'Сидоров',N'Россия1';
+EXEC Vvod_Events 4,N'Событие4',GETDATE()-8,'14:00',N'Минск',N'Иванов',N'РЕН';
+EXEC Vvod_Events 5,N'Событие5',GETDATE(),'18:20',N'Берлин',N'Орлов',N'BBC';
+GO
+
+SELECT * FROM Events;
+GO
+
+CREATE PROCEDURE Del_Ev
+    @auth NVARCHAR(50)
+AS
+BEGIN
+    DELETE FROM Events
+    WHERE Author = @auth;
+END;
+GO
+
+CREATE VIEW View_Events1
+AS
+SELECT *
+FROM Events
+WHERE EventDate >= DATEADD(DAY,-7,CAST(GETDATE() AS DATE))
+  AND Channel = N'Россия1';
+GO
+
+CREATE VIEW View_Events2
+AS
+SELECT *
+FROM Events
+WHERE EventTime > '12:00';
+GO
+
+CREATE ROLE RoleEvents;
+GO
+
+CREATE LOGIN Avtor1 WITH PASSWORD='Ev135';
+CREATE LOGIN Avtor2 WITH PASSWORD='Ev246';
+GO
+
+CREATE USER Avtor1 FOR LOGIN Avtor1;
+CREATE USER Avtor2 FOR LOGIN Avtor2;
+GO
+
+EXEC sp_addrolemember 'RoleEvents','Avtor1';
+EXEC sp_addrolemember 'RoleEvents','Avtor2';
+GO
+
+GRANT EXECUTE ON Del_Ev TO RoleEvents;
+GRANT SELECT, UPDATE ON Events TO Avtor2;
+GRANT EXECUTE ON Vvod_Events TO Avtor2;
+GRANT SELECT ON View_Events1 TO Avtor1;
+GRANT SELECT ON View_Events2 TO Avtor1;
+GO
+
+EXEC sp_helprotect @username='Avtor1';
+EXEC sp_helprotect @username='Avtor2';
+GO
+
+BACKUP DATABASE News TO [Ust402-18];
+GO
+
+EXEC sp_helpdb News;
+GO
+----------------[bil19]----------------
+USE master;
+GO
+
+IF DB_ID('Cafe') IS NOT NULL
+    DROP DATABASE Cafe;
+GO
+
+CREATE DATABASE Cafe
+ON PRIMARY
+(
+    NAME = Cafe_Data,
+    FILENAME = 'C:\SQLData\Cafe_Data.mdf',
+    SIZE = 6MB,
+    MAXSIZE = 10MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+    NAME = Cafe_Log,
+    FILENAME = 'C:\SQLData\Cafe_Log.ldf',
+    SIZE = 2MB,
+    MAXSIZE = 4MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE Cafe;
+GO
+
+CREATE TABLE Menu
+(
+    DishCode INT PRIMARY KEY,
+    DishName NVARCHAR(100) NOT NULL,
+    Category NVARCHAR(20) NOT NULL,
+    Price MONEY NOT NULL,
+    InSale BIT NOT NULL,
+    CookTime INT NOT NULL,
+    Rating INT NOT NULL CHECK (Rating BETWEEN 1 AND 5)
+);
+GO
+
+CREATE PROCEDURE Vvod_Menu
+    @Code INT,
+    @Name NVARCHAR(100),
+    @Cat NVARCHAR(20),
+    @Price MONEY,
+    @Sale BIT,
+    @Time INT,
+    @Rate INT
+AS
+BEGIN
+    INSERT INTO Menu
+    VALUES (@Code,@Name,@Cat,@Price,@Sale,@Time,@Rate);
+END;
+GO
+
+EXEC Vvod_Menu 1,N'Борщ',N'Супы',350,1,30,5;
+EXEC Vvod_Menu 2,N'Цезарь',N'Закуска',550,1,15,4;
+EXEC Vvod_Menu 3,N'Стейк',N'Горячее',1200,1,40,5;
+EXEC Vvod_Menu 4,N'Картофель',N'Гарнир',250,1,20,3;
+EXEC Vvod_Menu 5,N'Оливье',N'Закуска',450,1,20,4;
+GO
+
+SELECT * FROM Menu;
+GO
+
+CREATE VIEW View_Menu1
+AS
+SELECT TOP 1 *
+FROM Menu
+WHERE Category = N'Закуска'
+ORDER BY Price DESC;
+GO
+
+CREATE VIEW View_Menu2
+AS
+SELECT *
+FROM Menu
+WHERE CookTime <= 20
+  AND Price BETWEEN 300 AND 1000;
+GO
+
+CREATE PROCEDURE Up_Teacher
+AS
+BEGIN
+    UPDATE Menu
+    SET Price = Price * 1.1
+    WHERE Category = N'Горячее';
+END;
+GO
+
+CREATE ROLE Povar;
+GO
+
+CREATE LOGIN User01 WITH PASSWORD='Cafe335';
+CREATE LOGIN User02 WITH PASSWORD='Cafe668';
+GO
+
+CREATE USER User01 FOR LOGIN User01;
+CREATE USER User02 FOR LOGIN User02;
+GO
+
+EXEC sp_addrolemember 'Povar','User01';
+EXEC sp_addrolemember 'Povar','User02';
+GO
+
+GRANT SELECT ON View_Menu1 TO Povar;
+GRANT SELECT ON View_Menu2 TO Povar;
+GRANT EXECUTE ON Vvod_Menu TO User01;
+GRANT SELECT ON Menu TO User02;
+GRANT EXECUTE ON Up_Teacher TO User02;
+GO
+
+EXEC sp_helprotect @username='User01';
+EXEC sp_helprotect @username='User02';
+GO
+
+EXEC sp_addumpdevice 'disk','Ust402-19','C:\SQLBackup\Cafe.bak';
+GO
+
+BACKUP DATABASE Cafe TO [Ust402-19];
+GO
+
+EXEC sp_helpdb Cafe;
+GO
+
+----------------[bil20]----------------
+USE master;
+GO
+
+IF DB_ID('Filmoteka') IS NOT NULL
+    DROP DATABASE Filmoteka;
+GO
+
+CREATE DATABASE Filmoteka
+ON PRIMARY
+(
+    NAME = Film_Data,
+    FILENAME = 'C:\SQLData\Film_Data.mdf',
+    SIZE = 3MB,
+    MAXSIZE = 5MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+    NAME = Film_Log,
+    FILENAME = 'C:\SQLData\Film_Log.ldf',
+    SIZE = 1MB,
+    MAXSIZE = 3MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE Filmoteka;
+GO
+
+CREATE TABLE Film
+(
+    FilmID INT PRIMARY KEY,
+    Title NVARCHAR(100) NOT NULL,
+    Director NVARCHAR(100) NOT NULL,
+    Genre NVARCHAR(50) NOT NULL,
+    YearRel INT NOT NULL,
+    Country NVARCHAR(50) NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Film
+    @ID INT,
+    @Title NVARCHAR(100),
+    @Director NVARCHAR(100),
+    @Genre NVARCHAR(50),
+    @Year INT,
+    @Country NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO Film
+    VALUES (@ID,@Title,@Director,@Genre,@Year,@Country);
+END;
+GO
+
+EXEC Vvod_Film 1,N'Матрица',N'Вачовски',N'Фантастика',1999,N'США';
+EXEC Vvod_Film 2,N'Начало',N'Нолан',N'Триллер',2010,N'США';
+EXEC Vvod_Film 3,N'Титаник',N'Кэмерон',N'Драма',1997,N'США';
+EXEC Vvod_Film 4,N'Интерстеллар',N'Нолан',N'Фантастика',2014,N'США';
+EXEC Vvod_Film 5,N'Гладиатор',N'Скотт',N'История',2000,N'США';
+GO
+
+SELECT * FROM Film;
+GO
+
+CREATE PROCEDURE Del_Fm
+    @Director NVARCHAR(100)
+AS
+BEGIN
+    DELETE FROM Film
+    WHERE Director = @Director;
+END;
+GO
+
+CREATE VIEW View_Film1
+AS
+SELECT *
+FROM Film
+WHERE YearRel > 2000 AND Director = N'Нолан';
+GO
+
+CREATE VIEW View_Film2
+AS
+SELECT Country, COUNT(*) AS Cnt
+FROM Film
+GROUP BY Country;
+GO
+
+CREATE ROLE RoleFilm;
+GO
+
+CREATE LOGIN Avtor1 WITH PASSWORD='Av791';
+CREATE LOGIN Avtor2 WITH PASSWORD='Av824';
+GO
+
+CREATE USER Avtor1 FOR LOGIN Avtor1;
+CREATE USER Avtor2 FOR LOGIN Avtor2;
+GO
+
+EXEC sp_addrolemember 'RoleFilm','Avtor1';
+EXEC sp_addrolemember 'RoleFilm','Avtor2';
+GO
+
+GRANT EXECUTE ON Vvod_Film TO RoleFilm;
+GRANT SELECT, UPDATE ON Film TO Avtor2;
+GRANT EXECUTE ON Del_Fm TO Avtor2;
+GRANT SELECT ON View_Film1 TO Avtor1;
+GRANT SELECT ON View_Film2 TO Avtor1;
+GO
+
+EXEC sp_helprotect @username='Avtor1';
+EXEC sp_helprotect @username='Avtor2';
+GO
+
+EXEC sp_addumpdevice 'disk','Ust402-20','C:\SQLBackup\Filmoteka.bak';
+GO
+
+BACKUP DATABASE Filmoteka TO [Ust402-20];
+GO
+
+EXEC sp_helpdb Filmoteka;
+GO
+
+----------------[bil21]----------------
+USE master;
+GO
+
+IF DB_ID('Geographic') IS NOT NULL
+    DROP DATABASE Geographic;
+GO
+
+CREATE DATABASE Geographic
+ON PRIMARY
+(
+    NAME = Geo_Data,
+    FILENAME = 'C:\SQLData\Geo_Data.mdf',
+    SIZE = 4MB,
+    MAXSIZE = 10MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+    NAME = Geo_Log,
+    FILENAME = 'C:\SQLData\Geo_Log.ldf',
+    SIZE = 1MB,
+    MAXSIZE = 3MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE Geographic;
+GO
+
+CREATE TABLE Planet
+(
+    Country NVARCHAR(100) PRIMARY KEY,
+    Capital NVARCHAR(100) NOT NULL,
+    YearFound INT NOT NULL,
+    Population BIGINT NOT NULL,
+    Area FLOAT NOT NULL,
+    President NVARCHAR(100) NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Planet
+    @Country NVARCHAR(100),
+    @Capital NVARCHAR(100),
+    @Year INT,
+    @Pop BIGINT,
+    @Area FLOAT,
+    @Pres NVARCHAR(100)
+AS
+BEGIN
+    INSERT INTO Planet
+    VALUES (@Country,@Capital,@Year,@Pop,@Area,@Pres);
+END;
+GO
+
+EXEC Vvod_Planet N'Россия',N'Москва',1147,146000000,17098242,N'Путин';
+EXEC Vvod_Planet N'Франция',N'Париж',508,67000000,643801,N'Макрон';
+EXEC Vvod_Planet N'Германия',N'Берлин',1237,83000000,357386,N'Штайнмайер';
+EXEC Vvod_Planet N'Италия',N'Рим',753,59000000,301340,N'Маттарелла';
+EXEC Vvod_Planet N'Испания',N'Мадрид',852,47000000,505990,N'Санчес';
+GO
+
+SELECT * FROM Planet;
+GO
+
+CREATE PROCEDURE Up_Pl
+    @Country NVARCHAR(100),
+    @Pop BIGINT,
+    @Pres NVARCHAR(100)
+AS
+BEGIN
+    UPDATE Planet
+    SET Population=@Pop, President=@Pres
+    WHERE Country=@Country;
+END;
+GO
+
+CREATE VIEW View_Pl1
+AS
+SELECT TOP 1 Country,President
+FROM Planet
+ORDER BY Population DESC;
+GO
+
+CREATE VIEW View_Pl2
+AS
+SELECT Capital, COUNT(*) AS Cnt
+FROM Planet
+WHERE YearFound BETWEEN 1800 AND 1877
+GROUP BY Capital;
+GO
+
+CREATE ROLE RolePlanet;
+GO
+
+CREATE LOGIN Avatar1 WITH PASSWORD='Av754391';
+CREATE LOGIN Avatar2 WITH PASSWORD='Av824566';
+GO
+
+CREATE USER Avatar1 FOR LOGIN Avatar1;
+CREATE USER Avatar2 FOR LOGIN Avatar2;
+GO
+
+EXEC sp_addrolemember 'RolePlanet','Avatar1';
+EXEC sp_addrolemember 'RolePlanet','Avatar2';
+GO
+
+GRANT SELECT ON Planet TO RolePlanet;
+GRANT EXECUTE ON Vvod_Planet TO RolePlanet;
+GRANT DELETE ON Planet TO Avatar1;
+GRANT EXECUTE ON Up_Pl TO Avatar1;
+GRANT SELECT ON View_Pl1 TO Avatar2;
+GRANT SELECT ON View_Pl2 TO Avatar2;
+GO
+
+EXEC sp_helprotect @username='Avatar1';
+EXEC sp_helprotect @username='Avatar2';
+GO
+
+EXEC sp_addumpdevice 'disk','Ust402-21','C:\SQLBackup\Geographic.bak';
+GO
+
+BACKUP DATABASE Geographic TO [Ust402-21];
+GO
+
+EXEC sp_helpdb Geographic;
+GO
+
+----------------[bil22]----------------
+USE master;
+GO
+
+IF DB_ID('City_Museum') IS NOT NULL
+    DROP DATABASE City_Museum;
+GO
+
+CREATE DATABASE City_Museum
+ON PRIMARY
+(
+    NAME = Mus_Data,
+    FILENAME = 'C:\SQLData\Mus_Data.mdf',
+    SIZE = 4MB,
+    MAXSIZE = 10MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+    NAME = Mus_Log,
+    FILENAME = 'C:\SQLData\Mus_Log.ldf',
+    SIZE = 1MB,
+    MAXSIZE = 3MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE City_Museum;
+GO
+
+CREATE TABLE Museum
+(
+    MuseumID INT PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    Address NVARCHAR(100) NOT NULL,
+    Phone CHAR(7) NOT NULL CHECK (Phone LIKE '1______'),
+    YearCreate INT NOT NULL,
+    Ticket MONEY NOT NULL,
+    Days NVARCHAR(50) NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Mus
+    @ID INT,
+    @Name NVARCHAR(100),
+    @Addr NVARCHAR(100),
+    @Phone CHAR(7),
+    @Year INT,
+    @Ticket MONEY,
+    @Days NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO Museum
+    VALUES (@ID,@Name,@Addr,@Phone,@Year,@Ticket,@Days);
+END;
+GO
+
+EXEC Vvod_Mus 1,N'Эрмитаж',N'Невский',1234567,1764,800,N'Вт-Вс';
+EXEC Vvod_Mus 2,N'Третьяковка',N'Крымский',1345678,1856,600,N'Вт-Вс';
+EXEC Vvod_Mus 3,N'Русский музей',N'Инженерная',1456789,1895,500,N'Вт-Вс';
+EXEC Vvod_Mus 4,N'Пушкинский',N'Волхонка',1567890,1912,700,N'Вт-Вс';
+EXEC Vvod_Mus 5,N'Исторический',N'Красная',1678901,1872,650,N'Вт-Вс';
+GO
+
+SELECT * FROM Museum;
+GO
+
+CREATE PROCEDURE Up_Mus
+    @ID INT,
+    @Phone CHAR(7)
+AS
+BEGIN
+    UPDATE Museum
+    SET Phone=@Phone
+    WHERE MuseumID=@ID;
+END;
+GO
+
+CREATE VIEW View_Mus1
+AS
+SELECT *
+FROM Museum;
+GO
+
+CREATE VIEW View_Mus2
+AS
+SELECT *
+FROM Museum
+WHERE Days NOT LIKE '%Пн%'
+  AND (Address LIKE N'Н%' OR Address LIKE N'К%');
+GO
+
+CREATE ROLE City;
+GO
+
+CREATE LOGIN Sotrudnic1 WITH PASSWORD='Sot754nic';
+CREATE LOGIN Sotrudnic2 WITH PASSWORD='Sot824nic';
+GO
+
+CREATE USER Sotrudnic1 FOR LOGIN Sotrudnic1;
+CREATE USER Sotrudnic2 FOR LOGIN Sotrudnic2;
+GO
+
+EXEC sp_addrolemember 'City','Sotrudnic1';
+EXEC sp_addrolemember 'City','Sotrudnic2';
+GO
+
+GRANT SELECT ON Museum TO City;
+GRANT EXECUTE ON Vvod_Mus TO City;
+GRANT UPDATE ON Museum TO Sotrudnic1;
+GRANT EXECUTE ON Up_Mus TO Sotrudnic1;
+GRANT SELECT ON View_Mus1 TO Sotrudnic2;
+GRANT SELECT ON View_Mus2 TO Sotrudnic2;
+GO
+
+EXEC sp_helprotect @username='Sotrudnic1';
+EXEC sp_helprotect @username='Sotrudnic2';
+GO
+
+EXEC sp_addumpdevice 'disk','Ust402-22','C:\SQLBackup\City_Museum.bak';
+GO
+
+BACKUP DATABASE City_Museum TO [Ust402-22];
+GO
+
+EXEC sp_helpdb City_Museum;
+GO
+
+----------------[bil23]----------------
+USE master;
+GO
+
+IF DB_ID('City_Monuments') IS NOT NULL
+    DROP DATABASE City_Monuments;
+GO
+
+CREATE DATABASE City_Monuments
+ON PRIMARY
+(
+    NAME = Mon_Data,
+    FILENAME = 'C:\SQLData\Mon_Data.mdf',
+    SIZE = 4MB,
+    MAXSIZE = 10MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+    NAME = Mon_Log,
+    FILENAME = 'C:\SQLData\Mon_Log.ldf',
+    SIZE = 1MB,
+    MAXSIZE = 3MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE City_Monuments;
+GO
+
+CREATE TABLE Authors
+(
+    AuthorID INT PRIMARY KEY,
+    Surname NVARCHAR(50) NOT NULL,
+    BirthYear INT NOT NULL,
+    DeathYear INT NOT NULL DEFAULT 0,
+    BirthPlace NVARCHAR(100) NOT NULL
+);
+GO
+
+CREATE TABLE Monuments
+(
+    MonID INT PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    AuthorID INT NOT NULL,
+    CreateYear INT NOT NULL,
+    District NVARCHAR(50) NOT NULL,
+    Metro NVARCHAR(50) NOT NULL,
+    CONSTRAINT FK_Mon_Auth FOREIGN KEY (AuthorID)
+        REFERENCES Authors(AuthorID)
+);
+GO
+
+CREATE PROCEDURE Vvod_Authors
+    @ID INT,
+    @Surname NVARCHAR(50),
+    @Birth INT,
+    @Death INT,
+    @Place NVARCHAR(100)
+AS
+BEGIN
+    INSERT INTO Authors
+    VALUES (@ID,@Surname,@Birth,@Death,@Place);
+END;
+GO
+
+CREATE PROCEDURE Vvod_Monuments
+    @ID INT,
+    @Name NVARCHAR(100),
+    @AuthID INT,
+    @Year INT,
+    @Dist NVARCHAR(50),
+    @Metro NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO Monuments
+    VALUES (@ID,@Name,@AuthID,@Year,@Dist,@Metro);
+END;
+GO
+
+EXEC Vvod_Authors 1,N'Шадр',1876,1941,N'Россия';
+EXEC Vvod_Authors 2,N'Опекушин',1838,1923,N'Россия';
+EXEC Vvod_Authors 3,N'Неизвестный',1900,0,N'Россия';
+GO
+
+EXEC Vvod_Monuments 1,N'Рабочий и колхозница',1,1937,N'СВАО',N'ВДНХ';
+EXEC Vvod_Monuments 2,N'Пушкин',2,1880,N'ЦАО',N'Тверская';
+EXEC Vvod_Monuments 3,N'Героям',3,1980,N'ЮАО',N'Коломенская';
+EXEC Vvod_Monuments 4,N'Победа',1,1945,N'САО',N'Сокол';
+EXEC Vvod_Monuments 5,N'Слава',3,1990,N'ЗАО',N'Кунцево';
+GO
+
+SELECT * FROM Authors;
+SELECT * FROM Monuments;
+GO
+
+CREATE VIEW View_Monum1
+AS
+SELECT M.Name, M.Metro
+FROM Monuments M
+JOIN Authors A ON M.AuthorID = A.AuthorID
+WHERE M.Metro = N'ВДНХ';
+GO
+
+CREATE VIEW View_Monum2
+AS
+SELECT DISTINCT A.Surname
+FROM Authors A
+JOIN Monuments M ON A.AuthorID = M.AuthorID
+WHERE M.CreateYear = 1937;
+GO
+
+CREATE ROLE City;
+GO
+
+CREATE LOGIN Mon1 WITH PASSWORD='Mon754nic';
+CREATE LOGIN Mon2 WITH PASSWORD='Mon824nic';
+GO
+
+CREATE USER Mon1 FOR LOGIN Mon1;
+CREATE USER Mon2 FOR LOGIN Mon2;
+GO
+
+EXEC sp_addrolemember 'City','Mon1';
+EXEC sp_addrolemember 'City','Mon2';
+GO
+
+GRANT SELECT ON Authors TO City;
+GRANT SELECT ON Monuments TO City;
+GRANT EXECUTE ON Vvod_Authors TO City;
+GRANT EXECUTE ON Vvod_Monuments TO City;
+GRANT UPDATE ON Authors TO Mon1;
+GRANT UPDATE ON Monuments TO Mon1;
+GRANT SELECT ON View_Monum1 TO Mon2;
+GRANT SELECT ON View_Monum2 TO Mon2;
+GO
+
+EXEC sp_helprotect @username='Mon1';
+EXEC sp_helprotect @username='Mon2';
+GO
+
+EXEC sp_addumpdevice 'disk','Ust402-23','C:\SQLBackup\City_Monuments.bak';
+GO
+
+BACKUP DATABASE City_Monuments TO [Ust402-23];
+GO
+
+EXEC sp_helpdb City_Monuments;
+GO
+
+----------------[bil24]----------------
+USE master;
+GO
+
+IF DB_ID('Ice_rink') IS NOT NULL
+    DROP DATABASE Ice_rink;
+GO
+
+CREATE DATABASE Ice_rink
+ON PRIMARY
+(
+    NAME = Ice_Data,
+    FILENAME = 'C:\SQLData\Ice_Data.mdf',
+    SIZE = 4MB,
+    MAXSIZE = 10MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+    NAME = Ice_Log,
+    FILENAME = 'C:\SQLData\Ice_Log.ldf',
+    SIZE = 1MB,
+    MAXSIZE = 3MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE Ice_rink;
+GO
+
+CREATE TABLE Skating
+(
+    SkateID INT PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    Address NVARCHAR(100) NOT NULL,
+    District NVARCHAR(50) NOT NULL,
+    Metro NVARCHAR(50) NOT NULL,
+    Price MONEY NOT NULL CHECK (Price <= 500),
+    Phone CHAR(7) NOT NULL CHECK (Phone LIKE '1______')
+);
+GO
+
+CREATE PROCEDURE Vvod_Skat
+    @ID INT,
+    @Name NVARCHAR(100),
+    @Addr NVARCHAR(100),
+    @Dist NVARCHAR(50),
+    @Metro NVARCHAR(50),
+    @Price MONEY,
+    @Phone CHAR(7)
+AS
+BEGIN
+    INSERT INTO Skating
+    VALUES (@ID,@Name,@Addr,@Dist,@Metro,@Price,@Phone);
+END;
+GO
+
+EXEC Vvod_Skat 1,N'Каток Север',N'Невская',N'САО',N'Сокол',300,1234567;
+EXEC Vvod_Skat 2,N'Каток Юг',N'Каширская',N'ЮАО',N'Каширская',250,1345678;
+EXEC Vvod_Skat 3,N'Каток Центр',N'Тверская',N'ЦАО',N'Тверская',350,1456789;
+EXEC Vvod_Skat 4,N'Каток Запад',N'Кутузовская',N'ЗАО',N'Кутузовская',200,1567890;
+EXEC Vvod_Skat 5,N'Каток Восток',N'Щелковская',N'ВАО',N'Щелковская',400,1678901;
+GO
+
+SELECT * FROM Skating;
+GO
+
+CREATE PROCEDURE Up_Skat
+    @ID INT,
+    @Phone CHAR(7)
+AS
+BEGIN
+    UPDATE Skating
+    SET Phone=@Phone
+    WHERE SkateID=@ID;
+END;
+GO
+
+CREATE VIEW View_Skat1
+AS
+SELECT *
+FROM Skating
+WHERE Metro = N'Тверская'
+  AND Price BETWEEN 100 AND 350;
+GO
+
+CREATE VIEW View_Skat2
+AS
+SELECT District, COUNT(*) AS Cnt
+FROM Skating
+GROUP BY District;
+GO
+
+CREATE ROLE Skat;
+GO
+
+CREATE LOGIN Sk1 WITH PASSWORD='Sk777nic';
+CREATE LOGIN Sk2 WITH PASSWORD='Sk888nic';
+GO
+
+CREATE USER Sk1 FOR LOGIN Sk1;
+CREATE USER Sk2 FOR LOGIN Sk2;
+GO
+
+EXEC sp_addrolemember 'Skat','Sk1';
+EXEC sp_addrolemember 'Skat','Sk2';
+GO
+
+GRANT SELECT ON Skating TO Skat;
+GRANT EXECUTE ON Vvod_Skat TO Skat;
+GRANT UPDATE, DELETE ON Skating TO Sk1;
+GRANT EXECUTE ON Up_Skat TO Sk2;
+GRANT SELECT ON View_Skat1 TO Sk2;
+GRANT SELECT ON View_Skat2 TO Sk2;
+GO
+
+EXEC sp_helprotect @username='Sk1';
+EXEC sp_helprotect @username='Sk2';
+GO
+
+EXEC sp_addumpdevice 'disk','Ust402-24','C:\SQLBackup\Ice_rink.bak';
+GO
+
+BACKUP DATABASE Ice_rink TO [Ust402-24];
+GO
+
+EXEC sp_helpdb Ice_rink;
+GO
+
+----------------[bil25]----------------
+USE master;
+GO
+
+IF DB_ID('Medicines') IS NOT NULL
+    DROP DATABASE Medicines;
+GO
+
+CREATE DATABASE Medicines
+ON PRIMARY
+(
+    NAME = Med_Data,
+    FILENAME = 'C:\SQLData\Med_Data.mdf',
+    SIZE = 3MB,
+    MAXSIZE = 5MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+    NAME = Med_Log,
+    FILENAME = 'C:\SQLData\Med_Log.ldf',
+    SIZE = 1MB,
+    MAXSIZE = 3MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE Medicines;
+GO
+
+CREATE TABLE [Order]
+(
+    OrderNo CHAR(4) PRIMARY KEY CHECK (OrderNo LIKE '2___'),
+    ClientCode CHAR(3) NOT NULL CHECK (ClientCode LIKE '[0-9][0-9][0-9]'),
+    Drug NVARCHAR(100) NOT NULL,
+    Price MONEY NOT NULL,
+    Qty INT NOT NULL,
+    OrderDate DATE NOT NULL
+);
+GO
+
+CREATE PROCEDURE Vvod_Ord
+    @No CHAR(4),
+    @Client CHAR(3),
+    @Drug NVARCHAR(100),
+    @Price MONEY,
+    @Qty INT,
+    @Date DATE
+AS
+BEGIN
+    INSERT INTO [Order]
+    VALUES (@No,@Client,@Drug,@Price,@Qty,@Date);
+END;
+GO
+
+EXEC Vvod_Ord '2001','101',N'Аспирин',50,10,'2024-01-10';
+EXEC Vvod_Ord '2002','102',N'Парацетамол',40,20,'2024-01-15';
+EXEC Vvod_Ord '2003','101',N'Нурофен',120,5,'2024-02-01';
+EXEC Vvod_Ord '2004','102',N'Анальгин',30,15,'2024-02-10';
+EXEC Vvod_Ord '2005','101',N'Цитрамон',25,25,'2024-02-20';
+GO
+
+SELECT * FROM [Order];
+GO
+
+CREATE PROCEDURE Up_Ord
+    @No CHAR(4),
+    @Qty INT
+AS
+BEGIN
+    UPDATE [Order]
+    SET Qty=@Qty
+    WHERE OrderNo=@No;
+END;
+GO
+
+CREATE VIEW View_Ord1
+AS
+SELECT *
+FROM [Order]
+WHERE OrderDate BETWEEN '2024-02-01' AND '2024-02-28';
+GO
+
+CREATE PROCEDURE Proc_Ord2
+AS
+BEGIN
+    SELECT ClientCode,
+           SUM(Price*Qty) AS TotalSum
+    FROM [Order]
+    WHERE ClientCode IN ('101','102')
+    GROUP BY ClientCode;
+END;
+GO
+
+CREATE ROLE Medic;
+GO
+
+CREATE LOGIN Medic1 WITH PASSWORD='Ord991nic';
+CREATE LOGIN Medic2 WITH PASSWORD='Ord445nic';
+GO
+
+CREATE USER Medic1 FOR LOGIN Medic1;
+CREATE USER Medic2 FOR LOGIN Medic2;
+GO
+
+EXEC sp_addrolemember 'Medic','Medic1';
+EXEC sp_addrolemember 'Medic','Medic2';
+GO
+
+GRANT SELECT ON [Order] TO Medic;
+GRANT EXECUTE ON Vvod_Ord TO Medic;
+GRANT UPDATE, DELETE ON [Order] TO Medic1;
+GRANT SELECT ON View_Ord1 TO Medic2;
+GRANT EXECUTE ON Up_Ord TO Medic2;
+GRANT EXECUTE ON Proc_Ord2 TO Medic2;
+GO
+
+EXEC sp_helprotect @username='Medic1';
+EXEC sp_helprotect @username='Medic2';
+GO
+
+EXEC sp_addumpdevice 'disk','Ust402-25','C:\SQLBackup\Medicines.bak';
+GO
+
+BACKUP DATABASE Medicines TO [Ust402-25];
+GO
+
+EXEC sp_helpdb Medicines;
+GO
